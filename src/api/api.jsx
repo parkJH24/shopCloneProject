@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { GoogleAuthProvider, getAuth, onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
-import { getDatabase } from 'firebase/database';
+import { getDatabase, ref as databeseRef, set, get, query, orderByChild, equalTo } from 'firebase/database';
 import { getDownloadURL, getStorage, ref as storageRef, uploadBytes } from 'firebase/storage';
 import { adminUser } from '@/service/admin';
 import { v4 as uuid } from 'uuid'
@@ -10,7 +10,7 @@ const firebaseConfig = {
     authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
     projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
     databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DB_URL,
-    storageBucket : process.env.NEXT_PUBLIC_STORAGE_BUCKET
+    storageBucket: process.env.NEXT_PUBLIC_STORAGE_BUCKET
 };
 //firebaseConfig : firebase 프로젝트 설정 값 객체 api키, 도메인 인증, 데이터베이스 키값...
 
@@ -75,9 +75,88 @@ export async function uploadImgs(file) {
         const imgUrl = await getDownloadURL(imgRef)
         return imgUrl
 
-    }catch(error){
+    } catch (error) {
         console.error(error)
     }
 }
+//이미지 링크와 함께 상품을 데이터베이스에 등록
+export async function addProducts(product, imgUrl) {
+    try {
+        const id = uuid();
+        await set(databeseRef(database, `products/${id}`), {
+            ...product,
+            id,
+            image: imgUrl,
+            price: parseInt(product.price)
+        })
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+//데이터베이스에 등록된 상품 리스트를 가져오기
+export async function getProducts(){
+    try{
+        const snapshot = await get(databeseRef(database,'products'));
+        if(snapshot.exists()){
+            return Object.values(snapshot.val())
+        }else{
+            return []
+        }
+    }catch(error){
+        console.error(error)
+        return []
+    }
+}
+
+//카테고리별로 아이템을 구분해서 출력 클라이언트 필터링ver
+//데이터의 양이 작을때에는 상관없지만 데이터의 양이 많을 경우에는 클라이언트 필터링이 불리해지는 부분이 생김
+/*
+모든 데이터를 클라이언트로 전송하는 로직이기 때문에 클라이언트 자체의 메모리를 사용하기 때문에 로딩이나 메모리 처리에
+과부하의 문제가 생김
+데이터의 전송량 문제 : 데이터가 클 수록 네트워크 데이터 사용량이 증가
+
+서버측 필터링으로 대체
+-api서버 자체에서 필터링을 거친 후 결과값만 클라이언트 전송되기 때문에 데이터의 속도나 사용량에 차이가 많이
+생김
+
+데이터 양이 클수록 클라이언트 필터링보다는 서버 필터링을 추천 
+*/
+// export async function getCategoryProduct(category){
+//     try{
+//         return get(databeseRef(database, 'products')).then((snapshot)=>{
+//             if(snapshot.exists()){
+//                 const allProduct = Object.values(snapshot.val());
+//                 const filterProduct = allProduct.filter((product)=>product.category === category);
+//                 return filterProduct
+//             }else{
+//                 return []
+//             }
+//         })
+//     }catch(error){
+//         console.error(error)
+//     }
+// }
+
+//서바 필터링 ver
+export async function getCategoryProduct(category){
+    try{
+        const productRef = databeseRef(database, 'products');
+        //category를 기준으로 쿼리를 생성하고 주어진 값이 전송받은 category와 같은 값만 조회
+        const q = query(productRef, orderByChild('category'), equalTo(category))
+        const snapshot = await get(q);
+        if(snapshot.exists()){
+            return Object.values(snapshot.val());
+        }else{
+            return [];
+        }
+    }catch(error){
+        console.error(error)
+        return []
+    }
+}
+
+
+
 
 export { database }

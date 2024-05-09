@@ -6,7 +6,6 @@ import { useState } from "react"
 import { ServerStyleSheet, StyleSheetManager } from "styled-components"
 import { GlobalStyle } from "./GlobalStyle"
 
-
 export const Registry = ({children})=>{
     const [sheet] = useState(()=>new ServerStyleSheet())
     //초기 상태에서 ServerStyleSheet라는 인스턴스 생성
