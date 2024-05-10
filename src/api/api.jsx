@@ -95,15 +95,15 @@ export async function addProducts(product, imgUrl) {
 }
 
 //데이터베이스에 등록된 상품 리스트를 가져오기
-export async function getProducts(){
-    try{
-        const snapshot = await get(databeseRef(database,'products'));
-        if(snapshot.exists()){
+export async function getProducts() {
+    try {
+        const snapshot = await get(databeseRef(database, 'products'));
+        if (snapshot.exists()) {
             return Object.values(snapshot.val())
-        }else{
+        } else {
             return []
         }
-    }catch(error){
+    } catch (error) {
         console.error(error)
         return []
     }
@@ -139,24 +139,58 @@ export async function getProducts(){
 // }
 
 //서바 필터링 ver
-export async function getCategoryProduct(category){
-    try{
+export async function getCategoryProduct(category) {
+    try {
         const productRef = databeseRef(database, 'products');
         //category를 기준으로 쿼리를 생성하고 주어진 값이 전송받은 category와 같은 값만 조회
         const q = query(productRef, orderByChild('category'), equalTo(category))
         const snapshot = await get(q);
-        if(snapshot.exists()){
+        if (snapshot.exists()) {
             return Object.values(snapshot.val());
-        }else{
+        } else {
             return [];
         }
-    }catch(error){
+    } catch (error) {
         console.error(error)
         return []
     }
 }
 
+//디테일 페이지에서 전달받은 제품 id를 이용해서 database에 있는 동일한 id의 제품과 매칭
+export async function getProductId(productId) {
+    try {
+        const productRef = databeseRef(database, `products/${productId}`);
+        const snapshot = await get(productRef);
+        if (snapshot.exists()) {
+            return snapshot.val()
+        }
+    } catch (error) {
+        console.error(error)
+    }
+}
 
+export async function getCart(userId){
+    try{
+        const snapshot = await (get(databeseRef(database, `cart/${userId}`)));
+        if(snapshot.exists()){
+            const item = snapshot.val();
+            return Object.values(item);
+        }else{
+            return []
+        }
+    }catch(error){
+        console.error(error)
+    }
+}
+
+export async function updateCart(userId, product){
+    try{
+        const cartRef = databeseRef(database, `cart/${userId}/${product.id}`)
+        await set(cartRef, product);
+    }catch(error){
+        console.error(error);
+    }
+}
 
 
 export { database }
