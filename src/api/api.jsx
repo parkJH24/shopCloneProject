@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { GoogleAuthProvider, getAuth, onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
-import { getDatabase, ref as databeseRef, set, get, query, orderByChild, equalTo } from 'firebase/database';
+import { getDatabase, ref as databeseRef, set, get, query, orderByChild, equalTo, remove, ref } from 'firebase/database';
 import { getDownloadURL, getStorage, ref as storageRef, uploadBytes } from 'firebase/storage';
 import { adminUser } from '@/service/admin';
 import { v4 as uuid } from 'uuid'
@@ -10,7 +10,7 @@ const firebaseConfig = {
     authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
     projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
     databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DB_URL,
-    storageBucket: process.env.NEXT_PUBLIC_STORAGE_BUCKET
+    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
 };
 //firebaseConfig : firebase 프로젝트 설정 값 객체 api키, 도메인 인증, 데이터베이스 키값...
 
@@ -171,7 +171,7 @@ export async function getProductId(productId) {
 
 export async function getCart(userId){
     try{
-        const snapshot = await (get(databeseRef(database, `cart/${userId}`)));
+        const snapshot = await get(databeseRef(database, `cart/${userId}`));
         if(snapshot.exists()){
             const item = snapshot.val();
             return Object.values(item);
@@ -184,6 +184,10 @@ export async function getCart(userId){
 }
 
 export async function updateCart(userId, product){
+    if(!userId || !product || !product.id){
+        console.error(error);
+        return
+    }
     try{
         const cartRef = databeseRef(database, `cart/${userId}/${product.id}`)
         await set(cartRef, product);
@@ -191,6 +195,39 @@ export async function updateCart(userId, product){
         console.error(error);
     }
 }
+//장바구니 리스트 삭제
+export async function removeCart (userId, productId){
+    return remove (databeseRef(database, `cart/${userId}/${productId}`));
+}
+
+//검색 상품 
+export async function getSearchProducts(text){
+    try{
+        const dbRef = databeseRef(database,'products');
+        const snapshot = await get(dbRef);
+        if(snapshot.exists()){
+            const data = snapshot.val();
+            const allProducts = Object.values(data);
+            // console.log(allProducts)
+
+            if(allProducts.length === 0){
+                return []
+            }
+            const matchProducts = allProducts.filter((product)=>{
+                const itemTitle = product.title;
+                // console.log(itemTitle)
+                return itemTitle.includes(text)
+
+            })
+            return matchProducts
+        }else{
+            return []
+        }
+    }catch(error){
+        console.error(error)
+    }
+}
+
 
 
 export { database }
