@@ -251,7 +251,7 @@ export async function loginEmail(email, password){
         const userData = await signInWithEmailAndPassword(auth, email, password)
         return userData.user
     }catch(error){
-        console.error(error);
+        console.error(error)
     }
 }
 
