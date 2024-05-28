@@ -49,6 +49,7 @@ export async function googleLogOut() {
 }
 
 //로그인 유지(새로고침 해도 로그인 유지)
+//인증 상태 관리 
 export function onUserState(callback) {
     onAuthStateChanged(auth, async (user) => {
         //onAuthStateChanged = 사용자 인증 상태 변화 체크하는 파이어베이스 훅
@@ -125,9 +126,12 @@ export async function getProducts() {
 // export async function getCategoryProduct(category){
 //     try{
 //         return get(databeseRef(database, 'products')).then((snapshot)=>{
+        //get메서드로 데이터베이스에 있는 모든 데이터를 가져옴
 //             if(snapshot.exists()){
 //                 const allProduct = Object.values(snapshot.val());
+                    //가져온 데이터를 객체의 값들로 변환해서 배열로 반환
 //                 const filterProduct = allProduct.filter((product)=>product.category === category);
+                    //배열에서 주어진 특정한 카테고리와 일치하는 항목으로 필터링
 //                 return filterProduct
 //             }else{
 //                 return []
@@ -137,13 +141,21 @@ export async function getProducts() {
 //         console.error(error)
 //     }
 // }
+//
+
+
 
 //서바 필터링 ver
 export async function getCategoryProduct(category) {
     try {
         const productRef = databeseRef(database, 'products');
-        //category를 기준으로 쿼리를 생성하고 주어진 값이 전송받은 category와 같은 값만 조회
+        //데이터베이스안에 있는 products폴더를 참조해서 변수에 저장
+        //데이터베이스에 있는 products의 경로를 참조 
+        
         const q = query(productRef, orderByChild('category'), equalTo(category))
+        //주어진 참조 경로안에서 쿼리 조건문을 적용
+        //orderByChild = 쿼리문에서 조건(자식요소 안에 있는 키(category)를 기준으로 데이터를 정렬)
+        //equalTo = 지정된 갑과 일치하는 데이터만 반환
         const snapshot = await get(q);
         if (snapshot.exists()) {
             return Object.values(snapshot.val());
@@ -155,6 +167,20 @@ export async function getCategoryProduct(category) {
         return []
     }
 }
+
+/*
+필터링시 클라이언트버전과 서버버전 차이
+
+클라이언트 
+-모든 데이터를 클라이언트로 먼저 가져온 후 필터링
+-데이터의 양이 많아질수록 클라이언트에서 사용하는 메모리 양이 증가(네트워크 사용량 증가, 메모리 사용량 증가) = 과부화 원인
+
+
+서버
+-서버에서 필터링된 데이터만 간추려서 클라이언트로 전송
+-데이터의 전송량이 감소 = 사용자 속도, 클라이언트 측 메모리 감소, 네트워트 사용량 감소
+
+*/
 
 //디테일 페이지에서 전달받은 제품 id를 이용해서 database에 있는 동일한 id의 제품과 매칭
 export async function getProductId(productId) {
@@ -245,6 +271,9 @@ export async function joinEmail(email, password, name){
 }
 
 
+
+
+
 //이메일 로그인
 export async function loginEmail(email, password){
     try{
@@ -257,3 +286,12 @@ export async function loginEmail(email, password){
 
 
 export { database }
+
+
+
+
+
+
+
+
+
